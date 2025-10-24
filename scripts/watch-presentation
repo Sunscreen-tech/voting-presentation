@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check dependencies
+if ! command -v watchexec >/dev/null 2>&1; then
+    echo "Error: watchexec not found. Please install it or run in nix develop environment." >&2
+    exit 1
+fi
+
+echo "$(date +"%Y-%m-%d %H:%M:%S") Watching src/presentation.md for changes"
+echo "$(date +"%Y-%m-%d %H:%M:%S") Output: build/presentation-handout.pdf"
+
+# Run watchexec with explicit bash shell (build-presentation handles its own logging)
+exec watchexec --quiet --shell bash \
+               --watch src/presentation.md \
+               -- "$SCRIPT_DIR/build-presentation --handout"

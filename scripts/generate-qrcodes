@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+# Configuration constants for QR code generation
+readonly QR_FORMAT="PNG32"      # 8-bit RGBA PNG (compatible with XeLaTeX)
+readonly QR_MODULE_SIZE=10      # Module size (approximately 300x300px)
+readonly QR_MARGIN=2            # Margin size in modules
+readonly QR_ERROR_LEVEL="M"     # Error correction level (Medium)
+
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+FIGS_DIR="$PROJECT_ROOT/figs"
+PRESENTATION_MD="$PROJECT_ROOT/src/presentation.md"
+
+cd "$PROJECT_ROOT"
+
+# Create figs directory if it does not exist
+mkdir -p "$FIGS_DIR"
+
+# Check if qrencode is available
+if ! command -v qrencode >/dev/null 2>&1; then
+    log_error "qrencode command not found. Please install it or run in nix develop environment."
+    exit 1
+fi
+
+# Check if presentation.md exists
+if [[ ! -f "$PRESENTATION_MD" ]]; then
+    log_error "Presentation file not found: $PRESENTATION_MD"
+    exit 1
+fi
+
+log "Parsing QR code patterns from $PRESENTATION_MD"
+
+# Parse markdown to find all QR code patterns: ![URL](figs/qr-*.png)
+# Extract URL and filename pairs
+qr_count=0
+
+# Extract QR code patterns more safely using bash regex
+qr_patterns=$(grep -E '!\[https?://[^]]+\]\(figs/qr-[^)]+\.png\)' "$PRESENTATION_MD" || true)
+
+if [[ -z "$qr_patterns" ]]; then
+    log_error "No QR code patterns found in $PRESENTATION_MD"
+    log_error "Expected pattern: ![URL](figs/qr-*.png)"
+    exit 1
+fi
+
+# Store regex in variable to avoid shellcheck parsing issues
+qr_pattern='!\[(https?://[^]]+)\]\(figs/(qr-[^)]+\.png)\)'
+
+while IFS= read -r line; do
+    # Use parameter expansion and regex matching instead of pipes
+    if [[ "$line" =~ $qr_pattern ]]; then
+        url="${BASH_REMATCH[1]}"
+        filename="${BASH_REMATCH[2]}"
+        output="$FIGS_DIR/$filename"
+        qr_count=$((qr_count + 1))
+
+        log "Generating QR code for $url -> $filename"
+
+        if ! qrencode -t "$QR_FORMAT" -s "$QR_MODULE_SIZE" -m "$QR_MARGIN" \
+                      -l "$QR_ERROR_LEVEL" -o "$output" "$url"; then
+            log_error "Failed to generate QR code for $url"
+            exit 1
+        fi
+        log_success "Generated $output"
+    fi
+done <<< "$qr_patterns"
+
+if [[ $qr_count -eq 0 ]]; then
+    log_error "No valid QR code patterns could be parsed"
+    exit 1
+fi
+
+log_success "QR code generation complete ($qr_count generated)"

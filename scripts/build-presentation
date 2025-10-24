@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+check_dependencies pandoc xelatex
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Build the presentation PDF(s) from markdown source.
+
+OPTIONS:
+    --output-dir DIR    Output directory (default: build/)
+    --handout           Build only handout version
+    --presentation      Build only presentation version
+    --help              Show this help message
+
+By default, builds both presentation and handout versions.
+EOF
+    exit 0
+}
+
+OUTPUT_DIR="build"
+BUILD_PRESENTATION=true
+BUILD_HANDOUT=true
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --output-dir)
+            if [[ -z "${2:-}" ]]; then
+                log_error "--output-dir requires an argument"
+                usage
+            fi
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --handout)
+            BUILD_PRESENTATION=false
+            BUILD_HANDOUT=true
+            shift
+            ;;
+        --presentation)
+            BUILD_PRESENTATION=true
+            BUILD_HANDOUT=false
+            shift
+            ;;
+        --help)
+            usage
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+if ! mkdir -p "$OUTPUT_DIR"; then
+    log_error "Failed to create output directory: $OUTPUT_DIR"
+    exit 1
+fi
+
+# Generate QR codes for the presentation
+log "Generating QR codes"
+if ! "$SCRIPT_DIR/generate-qrcodes"; then
+    log_error "Failed to generate QR codes (see errors above)"
+    exit 1
+fi
+log_success "QR codes generated"
+
+if [[ "$BUILD_PRESENTATION" == "true" ]]; then
+    log "Building presentation.pdf"
+    if ! pandoc src/presentation.md \
+           -o "$OUTPUT_DIR/presentation.pdf" \
+           -t beamer \
+           --slide-level=2 \
+           --pdf-engine=xelatex \
+           --syntax-definition=syntax/solidity.xml; then
+        log_error "Failed to build presentation.pdf (see errors above)"
+        exit 1
+    fi
+    log_success "Built presentation.pdf"
+fi
+
+if [[ "$BUILD_HANDOUT" == "true" ]]; then
+    log "Building presentation-handout.pdf"
+    if ! pandoc src/presentation.md \
+           -o "$OUTPUT_DIR/presentation-handout.pdf" \
+           -t beamer \
+           --slide-level=2 \
+           --pdf-engine=xelatex \
+           --syntax-definition=syntax/solidity.xml \
+           -V handout; then
+        log_error "Failed to build presentation-handout.pdf (see errors above)"
+        exit 1
+    fi
+    log_success "Built presentation-handout.pdf"
+fi
+
+log_success "Build complete"

@@ -1,0 +1,35 @@
+name: Presentation Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  presentation-build:
+    name: Presentation Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: Run presentation build check
+        run: nix build -L '.?submodules=1#checks.x86_64-linux.presentation-build'
+
+      - name: Upload presentation PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: presentation-pdfs
+          path: |
+            result/build/presentation.pdf
+            result/build/presentation-handout.pdf
+          retention-days: 30

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Extract C and Solidity code blocks from presentation.md using pandoc lua filter
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+# Change to repository root directory
+REPO_ROOT=$(get_repo_root)
+cd "$REPO_ROOT"
+
+# Run pandoc with lua filter (output to /dev/null since we only want extraction)
+if ! pandoc src/presentation.md --lua-filter=filters/extract-code.lua -o /dev/null; then
+    echo "Error: Pandoc code extraction failed" >&2
+    echo "Attempted to extract from: src/presentation.md" >&2
+    echo "Using filter: filters/extract-code.lua" >&2
+    exit 1
+fi
+
+# Verify expected files were created
+c_file="fhe-programs/src/voting.c"
+sol_file="contracts/BinaryVoting.sol"
+extraction_failed=false
+
+if [[ ! -f "$c_file" ]]; then
+    echo "Error: Expected C file not created: $c_file" >&2
+    echo "Check that src/presentation.md contains code blocks with class 'c'" >&2
+    extraction_failed=true
+fi
+
+if [[ ! -f "$sol_file" ]]; then
+    echo "Error: Expected Solidity file not created: $sol_file" >&2
+    echo "Check that src/presentation.md contains code blocks with class 'solidity'" >&2
+    extraction_failed=true
+fi
+
+if [[ "$extraction_failed" == "true" ]]; then
+    exit 1
+fi
+
+echo "Code extraction complete:"
+echo "  - $c_file"
+echo "  - $sol_file"
+echo ""
+echo "To compile C programs: cd fhe-programs/src && make"
+echo "To compile Solidity: forge build"

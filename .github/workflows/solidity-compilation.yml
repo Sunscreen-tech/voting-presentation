@@ -1,0 +1,26 @@
+name: Solidity Compilation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  solidity-compilation:
+    name: Solidity Compilation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: Run Solidity compilation check
+        run: nix build -L '.?submodules=1#checks.x86_64-linux.solidity-compilation'

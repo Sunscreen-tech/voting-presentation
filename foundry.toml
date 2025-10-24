@@ -1,0 +1,9 @@
+[profile.default]
+src = "contracts"
+out = "build/foundry"
+libs = ["lib"]
+remappings = [
+    "@sunscreen/=lib/sunscreen-contracts/"
+]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

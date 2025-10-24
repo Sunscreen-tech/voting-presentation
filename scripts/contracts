@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Build or test Solidity contracts
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+check_dependencies forge git
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") [build|test]
+
+Commands:
+    build    Extract and compile contracts with forge
+    test     Extract and run contract tests with forge
+
+EOF
+    exit 1
+}
+
+if [[ $# -lt 1 ]]; then
+    usage
+fi
+
+command="$1"
+
+# Change to repository root directory
+REPO_ROOT=$(get_repo_root)
+cd "$REPO_ROOT"
+
+# Verify extract-code script exists
+EXTRACT_SCRIPT="$REPO_ROOT/scripts/extract-code"
+if [[ ! -x "$EXTRACT_SCRIPT" ]]; then
+    log_error "Extract script not found or not executable: $EXTRACT_SCRIPT"
+    exit 1
+fi
+
+case "$command" in
+    build)
+        log "Building Solidity contracts"
+        echo
+
+        log "Extracting contracts from presentation"
+        "$EXTRACT_SCRIPT"
+        echo
+
+        log "Compiling contracts with forge"
+        if ! forge build; then
+            log_error "Contract compilation failed"
+            exit 1
+        fi
+        echo
+        log_success "Contracts compiled successfully"
+        ;;
+    test)
+        log "Testing Solidity contracts"
+        echo
+
+        log "Extracting contracts from presentation"
+        "$EXTRACT_SCRIPT"
+        echo
+
+        log "Running tests with forge"
+        if ! forge test; then
+            log_error "Tests failed"
+            exit 1
+        fi
+        echo
+        log_success "All tests passed successfully"
+        ;;
+    *)
+        log_error "Unknown command: $command"
+        usage
+        ;;
+esac
