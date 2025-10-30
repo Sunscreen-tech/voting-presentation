@@ -344,8 +344,6 @@
             echo "  make               - Extract and compile C code"
             echo "  contracts build    - Extract and compile Solidity contracts"
             echo "  contracts test     - Extract and run contract tests"
-            echo "  build-contracts    - Alias for 'contracts build'"
-            echo "  test-contracts     - Alias for 'contracts test'"
             echo "  watch-presentation - Rebuild presentation on changes"
           '';
         };

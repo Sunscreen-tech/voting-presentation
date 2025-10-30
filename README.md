@@ -82,16 +82,7 @@ Extract and build contracts:
 
 ```sh
 contracts build     # Extract and compile with forge
-# or
-build-contracts     # Backward-compatible alias
-```
-
-Extract and run tests:
-
-```sh
 contracts test      # Extract and test with forge
-# or
-test-contracts      # Backward-compatible alias
 ```
 
 The `contracts` script extracts Solidity contracts from the presentation and compiles/tests them using Foundry. Compiled artifacts are placed in `build/foundry/`.
