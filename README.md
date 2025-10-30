@@ -5,7 +5,8 @@
 [![Presentation Build](https://github.com/sunscreen-tech/voting-presentation/actions/workflows/presentation-build.yml/badge.svg)](https://github.com/sunscreen-tech/voting-presentation/actions/workflows/presentation-build.yml)
 [![Nix Flake](https://img.shields.io/badge/nix-flake-blue?logo=nixos)](https://nixos.org)
 
-**Download:** [Presentation PDF](https://sunscreen-tech.github.io/voting-presentation/presentation.pdf) | [Handout PDF](https://sunscreen-tech.github.io/voting-presentation/presentation-handout.pdf)
+[![Download Presentation PDF](https://img.shields.io/badge/-Download%20Presentation%20PDF-blue)](https://sunscreen-tech.github.io/voting-presentation/presentation.pdf)
+[![Download Handout PDF](https://img.shields.io/badge/-Download%20Handout%20PDF-blue)](https://sunscreen-tech.github.io/voting-presentation/presentation-handout.pdf)
 
 Presentation about private voting using Fully Homomorphic Encryption. This project combines presentation slides with executable code examples, including FHE C programs and Solidity smart contracts.
 
