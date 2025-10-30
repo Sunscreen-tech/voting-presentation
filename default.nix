@@ -2,6 +2,8 @@
 , stdenv
 , texlive
 , pandoc
+, qrencode
+, bash
 , makeFontsConf
 , fira
 , fira-mono
@@ -24,11 +26,15 @@ stdenv.mkDerivation {
   name = "presentation";
   src = nix-gitignore.gitignoreSourcePure [ ./.gitignore ] ./.;
 
-  phases = [ "unpackPhase" "buildPhase" ];
+  phases = [ "unpackPhase" "patchPhase" "buildPhase" ];
 
-  buildInputs = [ texlive-combined pandoc ];
+  buildInputs = [ texlive-combined pandoc qrencode bash ];
 
   FONTCONFIG_FILE = "${fonts}";
+
+  patchPhase = ''
+    patchShebangs scripts/
+  '';
 
   buildPhase = ''
     mkdir -p $out

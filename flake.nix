@@ -143,7 +143,7 @@
             name = "check-solidity-compilation";
             src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
 
-            nativeBuildInputs = [ pkgs.pandoc pkgs.foundry-bin ];
+            nativeBuildInputs = [ pkgs.pandoc pkgs.foundry-bin pkgs.solc ];
 
             dontBuild = true;
             doCheck = true;
@@ -182,9 +182,11 @@
 
               echo "Solidity code extracted successfully"
 
-              # Compile with Foundry
+              # Compile with Foundry (use system solc to avoid network access)
               echo "=== Compiling Solidity code with forge ==="
-              if ! forge build 2>&1 | tee forge.log; then
+              echo "Using solc at: ${pkgs.solc}/bin/solc"
+              solc --version
+              if ! forge build --use "${pkgs.solc}/bin/solc" 2>&1 | tee forge.log; then
                 echo "=== Forge build failed ===" >&2
                 cat forge.log >&2
                 exit 1
@@ -224,6 +226,10 @@
 
             dontBuild = true;
             doCheck = true;
+
+            postPatch = ''
+              patchShebangs scripts/
+            '';
 
             checkPhase = ''
               runHook preCheck

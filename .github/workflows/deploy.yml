@@ -1,14 +1,17 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Presentation Build"]
+    types: [completed]
+    branches: [main]
 
 # Sets permissions for GitHub Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
 # Allow only one concurrent deployment
 concurrency:
@@ -17,28 +20,22 @@ concurrency:
 
 jobs:
   build:
-    name: Build Presentation
+    name: Prepare Deployment
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Download presentation artifacts
+        uses: actions/download-artifact@v4
         with:
-          submodules: recursive
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v14
-
-      - name: Setup Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-
-      - name: Build presentation
-        run: nix build -L '.?submodules=1'
+          name: presentation-pdfs
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare deployment directory
         run: |
           mkdir -p deploy
-          cp result/presentation.pdf deploy/
-          cp result/presentation-handout.pdf deploy/
+          mv presentation.pdf deploy/
+          mv presentation-handout.pdf deploy/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
